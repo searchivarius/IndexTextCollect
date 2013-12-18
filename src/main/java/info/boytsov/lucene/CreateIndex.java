@@ -9,9 +9,12 @@ package info.boytsov.lucene;
 
 import java.io.File;
 import java.util.Properties;
+
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource;
+import org.apache.lucene.benchmark.byTask.feeds.TrecContentSource;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
@@ -31,12 +34,12 @@ import org.apache.lucene.util.Version;
  * @author Daniel Lemire
  * 
  */
-public class CreateLuceneIndex {
+public class CreateIndex {
 
   public static void main(String[] args) throws Exception {
     if (args.length != 3) {
       printUsage();
-      return;
+      System.exit(1);
     }
     String indexType = args[0];
     String indexSource = args[1];
@@ -80,26 +83,15 @@ public class CreateLuceneIndex {
                                                                // document
                                                                // only
                                                                // once
-/*  
-    
-    File wikipediafile = new File(args[1]);
-    if (!wikipediafile.exists()) {
-      System.out.println("Can't find " + wikipediafile.getAbsolutePath());
-      return;
-    }
-    if (!wikipediafile.canRead()) {
-      System.out.println("Can't read " + wikipediafile.getAbsolutePath());
-      return;
-    }
    
-    properties.setProperty("docs.file", wikipediafile.getAbsolutePath());
-    properties.setProperty("keep.image.only.docs", "false");
-
-    new EnwikiContentSource();
-*/    
-    EnwikiContentSource source = CreateSource(indexType,
-                                              indexSource,
-                                              properties);
+    ContentSource source = CreateSource(indexType, indexSource, properties);
+    
+    if (source == null) {
+      System.err.println("Failed to create a source: " + 
+                         indexType + "(" + indexSource + ")");
+      printUsage();
+      System.exit(1);
+    }
     
     Config c = new Config(properties);    
     source.setConfig(c);
@@ -115,12 +107,16 @@ public class CreateLuceneIndex {
       while ((doc = docMaker.makeDocument()) != null) {
         indexWriter.addDocument(doc);
         ++count;
-        if (count % 1000 == 0)
+        if (count % 5000 == 0) {
           System.out.println("Indexed " + count + " documents in "
                               + (System.currentTimeMillis() - start) + " ms");
+        
+          indexWriter.commit();
+          System.out.println("Commited");
+        }
       }
     } catch (org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException nmd) {
-            nmd.printStackTrace();
+      System.out.println("Caught NoMoreDataException! -- Finishing"); // All done
     }
     long finish = System.currentTimeMillis();
     System.out.println("Indexing " + count + " documents took "
@@ -130,12 +126,57 @@ public class CreateLuceneIndex {
     System.out.println("Index should be located at "
             + dir.getDirectory().getAbsolutePath());
     docMaker.close();
+    indexWriter.commit();
     indexWriter.close();
+
+  }
+
+  private static ContentSource CreateSource(String indexType,
+      String indexSource, Properties properties) {
+    String typeLC = indexType.toUpperCase();
+    
+    if (typeLC.equals("WIKIPEDIA")) {  
+      File wikipediafile = new File(indexSource);
+      if (!wikipediafile.exists()) {
+        System.out.println("Can't find " + wikipediafile.getAbsolutePath());
+        return null;
+      }
+      if (!wikipediafile.canRead()) {
+        System.out.println("Can't read " + wikipediafile.getAbsolutePath());
+        return null;
+      }
+     
+      properties.setProperty("docs.file", wikipediafile.getAbsolutePath());
+      properties.setProperty("keep.image.only.docs", "false");
+
+      return new EnwikiContentSource();
+    } else if (typeLC.startsWith("TREC:")){
+      typeLC = typeLC.substring("TREC:".length());
+      String parserTREC = null;
+      if (typeLC.equals("GOV2")) {
+        parserTREC = "org.apache.lucene.benchmark.byTask.feeds.TrecGov2Parser";
+      }
+      
+      if (parserTREC == null) {
+        System.err.println("Unsupported TREC collection: " + typeLC);  
+      }
+      
+      properties.setProperty("html.parser", "info.boytsov.lucene.DemoHTMLParser");
+      properties.setProperty("trec.doc.parser", parserTREC);
+      properties.setProperty("docs.dir", indexSource);
+      properties.setProperty("work.dir", "/tmp");
+      
+      return new TrecContentSource();
+    } else {
+      System.err.println("Unsupported index type: " + indexType);
+    }
+    
+    return null;
   }
 
   private static void printUsage() {
-    System.out.println("Usage: java -cp <...> " + 
+    System.out.println("mvn exec:java -Dexec.args=\"" + 
                        "info.boytsov.lucene.CreateIndex " + 
-                       "<index type> <input dir/file> <output dir>");
+                       "<index type> <input dir/file> <output dir>\"");
   }
 }

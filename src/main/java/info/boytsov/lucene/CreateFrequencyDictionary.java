@@ -54,7 +54,7 @@ public class CreateFrequencyDictionary {
                 // we should be "ok" now
 
                 StandardAnalyzer analyzer = new StandardAnalyzer(
-                        Version.LUCENE_43);// default
+                        Version.LUCENE_46);// default
                                            // stop
                                            // words
                 DocMaker docMaker = new DocMaker();

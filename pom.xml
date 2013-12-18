@@ -1,21 +1,30 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+  <modelVersion>4.0.0</modelVersion>
 
-    <!-- This work is based on https://github.com/lemire/IndexWikipedia --> 
+  <!-- This work is based on https://github.com/lemire/IndexWikipedia --> 
 
-    <groupId>info.boytsov.lucene</groupId>
-    <artifactId>IndexTREC</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+  <groupId>info.boytsov.lucene</groupId>
+  <artifactId>IndexTextCollect</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
 
-    <name>IndexTREC</name>
-    <url>None</url>
-    <description>Simple utility to index collection in TREC formats using Lucene. </description>
+  <name>IndexTextCollect</name>
+  <url>None</url>
+  <description>Simple utility to index collection in TREC formats using Lucene. </description>
     
-    <properties>
-        <maven.compiler.source>1.6</maven.compiler.source>
-        <maven.compiler.target>1.6</maven.compiler.target>
-        <encoding>UTF-8</encoding>
-    </properties>
+  <properties>
+    <maven.compiler.source>1.6</maven.compiler.source>
+    <maven.compiler.target>1.6</maven.compiler.target>
+    <encoding>UTF-8</encoding>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>central-sync</id>
+      <name>Central Sync Sources</name>
+      <url>https://oss.sonatype.org/content/repositories/central-sync</url>
+    </repository>
+  </repositories>
+
 	<licenses>
 	  <license>
 	    <name>Apache 2</name>
@@ -51,13 +60,20 @@
 	    <artifactId>lucene-benchmark</artifactId>
 	    <version>4.6.0</version>
     </dependency>
+            
 
     <dependency>
 	    <groupId>org.apache.lucene</groupId>
 	    <artifactId>lucene-core</artifactId>
 	    <version>4.6.0</version>
     </dependency>
-            
+
+    <dependency>
+      <groupId>net.sourceforge.nekohtml</groupId>
+      <artifactId>nekohtml</artifactId>
+      <version>1.9.19</version>
+    </dependency>
+
   </dependencies>
 
   <parent>
@@ -73,7 +89,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>1.1</version>
         <configuration>
-          <mainClass>info.boytsov.lucene.IndexDump</mainClass>
+          <mainClass>info.boytsov.lucene.CreateIndex</mainClass>
         </configuration>
       </plugin> 
       <plugin>

@@ -12,8 +12,9 @@ Currently supported collections are:
 Usage:
 
 install java (JDK) if needed
-install maven if needed
-mvn compile
-mvn exec:java -Dexec.args="<type: Wikipedia, trec:GOV2"> <location of files, e.g., gov2> <output directory for the index>"
+install maven if needed 
+
+mvn compile  
+mvn exec:java -Dexec.args="[type: Wikipedia, trec:GOV2] [location of files, e.g., gov2] [output directory for the index]"  
 
 

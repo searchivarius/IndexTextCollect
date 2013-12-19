@@ -1,8 +1,9 @@
-package info.boytsov.lucene;
+package info.boytsov.lucene.parsers;
 /*
  * This is a slightly modified version of the DemoHTML parser.
- * Leonid made it ignore <frameset>...</frameset> instead of 
- * throwing an exception.
+   1) Ignore <frameset>...</frameset> instead of throwing an exception.
+   2) If doc.extended_body == true, append content of the title and
+      meta keywords to the body.     
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -28,13 +29,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.lucene.benchmark.byTask.feeds.*;
-
+import org.apache.lucene.benchmark.byTask.feeds.DocData;
 import org.cyberneko.html.parsers.SAXParser;
-
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -107,7 +107,6 @@ public class DemoHTMLParser implements HTMLParser {
              * indexing pipeline due to a couple of silly documents.
              *
             */
-            System.err.println("Ignoring framesets");
             //throw new SAXException("This parser does not support HTML framesets.");
           }
         }
@@ -189,8 +188,8 @@ public class DemoHTMLParser implements HTMLParser {
     final Parser p = new Parser(source);
     
     // properties 
-    final Properties props = p.metaTags;
-    String dateStr = props.getProperty("date");
+    final Properties docProps = p.metaTags;
+    String dateStr = docProps.getProperty("date");
     if (dateStr != null) {
       final Date newDate = trecSrc.parseDate(dateStr);
       if (newDate != null) {
@@ -198,11 +197,19 @@ public class DemoHTMLParser implements HTMLParser {
       }
     }
     
+    String bodyText = "";
+    
+    for (Entry<Object, Object> entry : docProps.entrySet()) {
+      bodyText = bodyText + " " + entry.getKey() + " " + entry.getValue();
+    }
+    
+    bodyText = bodyText + p.body;
+    
     docData.clear();
     docData.setName(name);
-    docData.setBody(p.body);
     docData.setTitle(p.title);
-    docData.setProps(props);
+    docData.setBody(bodyText);
+    docData.setProps(new Properties());
     docData.setDate(date);
     return docData;
   }

@@ -14,13 +14,14 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource;
-import org.apache.lucene.benchmark.byTask.feeds.TrecContentSource;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
+
+import info.boytsov.lucene.parsers.TrecContentSource;
 
 
 /**
@@ -37,7 +38,7 @@ import org.apache.lucene.util.Version;
 public class CreateIndex {
 
   public static void main(String[] args) throws Exception {
-    if (args.length != 3) {
+    if (args.length != 3 && args.length != 4) {
       printUsage();
       System.exit(1);
     }
@@ -60,8 +61,6 @@ public class CreateIndex {
       return;
     }
 
-    // we should be "ok" now
-
     FSDirectory dir = FSDirectory.open(outputDir);
 
     StandardAnalyzer analyzer = new StandardAnalyzer(
@@ -83,6 +82,8 @@ public class CreateIndex {
                                                                // document
                                                                // only
                                                                // once
+    properties.setProperty("doc.index.props", "true");
+    properties.setProperty("doc.stored", "true");
    
     ContentSource source = CreateSource(indexType, indexSource, properties);
     
@@ -112,11 +113,11 @@ public class CreateIndex {
                               + (System.currentTimeMillis() - start) + " ms");
         
           indexWriter.commit();
-          System.out.println("Commited");
+          System.out.println("Committed");
         }
       }
     } catch (org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException nmd) {
-      System.out.println("Caught NoMoreDataException! -- Finishing"); // All done
+       System.out.println("Caught NoMoreDataException! -- Finishing"); // All done
     }
     long finish = System.currentTimeMillis();
     System.out.println("Indexing " + count + " documents took "
@@ -128,6 +129,7 @@ public class CreateIndex {
     docMaker.close();
     indexWriter.commit();
     indexWriter.close();
+    System.out.println("Committed");
 
   }
 
@@ -154,14 +156,15 @@ public class CreateIndex {
       typeLC = typeLC.substring("TREC:".length());
       String parserTREC = null;
       if (typeLC.equals("GOV2")) {
-        parserTREC = "org.apache.lucene.benchmark.byTask.feeds.TrecGov2Parser";
+        parserTREC = "info.boytsov.lucene.parsers.TrecGov2Parser";
       }
       
       if (parserTREC == null) {
         System.err.println("Unsupported TREC collection: " + typeLC);  
       }
       
-      properties.setProperty("html.parser", "info.boytsov.lucene.DemoHTMLParser");
+      properties.setProperty("html.parser", 
+                             "info.boytsov.lucene.parsers.DemoHTMLParser");
       properties.setProperty("trec.doc.parser", parserTREC);
       properties.setProperty("docs.dir", indexSource);
       properties.setProperty("work.dir", "/tmp");
@@ -177,6 +180,6 @@ public class CreateIndex {
   private static void printUsage() {
     System.out.println("mvn exec:java -Dexec.args=\"" + 
                        "info.boytsov.lucene.CreateIndex " + 
-                       "<index type> <input dir/file> <output dir>\"");
+                       "<index type> <input dir/file> <output dir> \"");
   }
 }

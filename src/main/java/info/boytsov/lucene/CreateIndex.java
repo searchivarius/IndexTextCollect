@@ -13,7 +13,6 @@ import java.util.Properties;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
-import org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
@@ -22,6 +21,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
 import info.boytsov.lucene.parsers.TrecContentSource;
+import info.boytsov.lucene.parsers.EnwikiContentSource;
 
 
 /**
@@ -44,6 +44,13 @@ public class CreateIndex {
     }
     String indexType = args[0];
     String indexSource = args[1];
+    int commitInterval = 1000000;
+    
+    if (args.length >= 4) {
+      commitInterval = Integer.parseInt(args[3]);
+    }
+    
+    System.out.println("Commiting after indexing " + commitInterval + " docs");
 
     File outputDir = new File(args[2]);
     if (!outputDir.exists()) {
@@ -111,7 +118,8 @@ public class CreateIndex {
         if (count % 5000 == 0) {
           System.out.println("Indexed " + count + " documents in "
                               + (System.currentTimeMillis() - start) + " ms");
-        
+        } 
+        if (count % commitInterval == 0) {
           indexWriter.commit();
           System.out.println("Committed");
         }
@@ -129,7 +137,6 @@ public class CreateIndex {
     docMaker.close();
     indexWriter.commit();
     indexWriter.close();
-    System.out.println("Committed");
 
   }
 
@@ -178,8 +185,10 @@ public class CreateIndex {
   }
 
   private static void printUsage() {
-    System.out.println("mvn exec:java -Dexec.args=\"" + 
-                       "info.boytsov.lucene.CreateIndex " + 
-                       "<index type> <input dir/file> <output dir> \"");
+    System.out.println("mvn exec:java " + 
+                       " -Dexec.mainClass=info.boytsov.lucene.CreateIndex " +
+                       " -Dexec.args=\"" + 
+                       " <index type> <input dir/file> <output dir>" + 
+                       " <# of docs before commit> \"");
   }
 }

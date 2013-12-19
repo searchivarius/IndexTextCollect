@@ -80,6 +80,5 @@ public class TrecGov2Parser extends TrecDocParser {
      */    
     
     return docData;
-  }
-  
+  } 
 }

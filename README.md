@@ -15,6 +15,8 @@ install java (JDK) if needed
 install maven if needed 
 
 mvn compile  
-mvn exec:java -Dexec.args="[type: Wikipedia, trec:GOV2] [location of files, e.g., gov2] [output directory for the index]"  
+
+Indexing:
+launches/index.sh "[type: Wikipedia, trec:GOV2, trec:ClueWeb09] [location of files (a single file for Wikipedia)] [output directory for the index]"  
 
 

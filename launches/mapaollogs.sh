@@ -8,5 +8,9 @@ sampleQty=1000
 if [ "$6" != "" ] ; then
   sampleQty="$6"
 fi
-mvn exec:java -Dexec.args="$src $log $dst $minTermFreq $maxTermQty -sample_qty $sampleQty" -Dexec.mainClass=info.boytsov.lucene.MapAOLQueries
+debug=""
+if [ "$7" == "1" ] ; then
+  debug="-debug"
+fi
+mvn exec:java -Dexec.args="$src $log $dst $minTermFreq $maxTermQty -sample_qty $sampleQty $debug" -Dexec.mainClass=info.boytsov.lucene.MapAOLQueries
 

@@ -8,16 +8,13 @@ package info.boytsov.lucene;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.lucene.analysis.core.StopAnalyzer;
@@ -82,7 +79,9 @@ public class MapAOLQueries {
     for (int i = optArg; i < args.length; ++i) {
       if (args[i].equals("-permit_sess_duppl")) {
         ignoreSessionDuplicates = true;
-      } else if (args[i].equals("-sample_qty")) {
+      } else if (args[i].equals("-debug")) {
+        DEBUG=true;
+      } else if (args[i].equals("-sample_qty")) {        
         sampleQty = Integer.parseInt(args[++i]);
       } else if (args[i].equals("-min_query_size")){
         minQuerySize = Integer.parseInt(args[++i]);
@@ -244,7 +243,8 @@ public class MapAOLQueries {
                        " <min term frequency> <optional: max # of terms>" +
                        " -permit_sess_duppl" +
                        " -sample_qty <# of queries to sample> " +
-                       " -min_query_size <min # of words in a query> " +
+                       " -min_query_size <min # of words in a query>" +
+                       " -debug "+
                        "\"");
   }  
   

@@ -13,7 +13,6 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -33,9 +32,11 @@ import org.apache.lucene.store.FSDirectory;
  */
 public class DumpIndex {
   final public static String FIELD_NAME = "body";
+  final public static int MIN_TERM_FREQ = 3;
+  final public static int MAX_TERM_QTY = 10000000; 
 
   public static void main(String[] args) {
-    if (args.length < 3 || args.length > 5) {
+    if (args.length < 3 || args.length > 8) {
       printUsage();
       System.exit(1);      
     }
@@ -44,11 +45,11 @@ public class DumpIndex {
     String srcDirName = args[1];
     String dstFileName = args[2];
     
-    int minTermFreq = 3;
+    int minTermFreq = MIN_TERM_FREQ;
     
     if (args.length >= 4) minTermFreq = Integer.parseInt(args[3]);
     
-    int maxTermQty  = 10000000; 
+    int maxTermQty  = MAX_TERM_QTY; 
     
     if (args.length >= 5) maxTermQty = Integer.parseInt(args[4]);
     
@@ -68,35 +69,32 @@ public class DumpIndex {
       
       if (sortByURL) {
         System.out.println("Re-sorting documents by URL!");
-        
-        TreeMap<String, Integer> remap = new TreeMap<String, Integer>();
+
+        URL2DocID remap[] = new URL2DocID[docQty];
         
         for (int docID = 0; docID < docQty; ++docID) {
           Document doc = reader.document(docID);
           String url = doc.get("url");
-          url = url + "#" + docID; // Let's ensure we can have repeating URLs
-          remap.put(url, docID);
+          remap[docID] = new URL2DocID(url, docID);
           if (docID % 100000 == 0) {
             System.out.println("Collected " + (docID + 1) + " URLs for re-sorting");
           }
         }
-        System.out.println("Collected all URLs for resoring, " + 
+        
+        Arrays.sort(remap);
+        
+        System.out.println("Collected and sorted all URLs for resoring, " + 
                            "filling out the sort table.");
                         
-        Iterator<Entry<String, Integer>> iter = remap.entrySet().iterator();
-        
-        for (int newDocID = 0; iter.hasNext(); ++newDocID) {
-          Entry<String, Integer> e = iter.next();
-          
-          sortTable[e.getValue()] = newDocID;
+        for (int newDocID = 0; newDocID < docQty; ++newDocID) {
+          sortTable[remap[newDocID].docID] = newDocID;
         }
         
         System.out.println("Sort table is filled up!");
-                
-        remap.clear();
-        remap = null;
-        
-        System.gc(); // Let's try to delete the entries from this map
+
+        for (int i = 0; i < docQty; ++i) remap[i] = null;
+        remap = null;        
+        System.gc(); // Let's try to free some memory
         
         /*
          *  Paranoid check: did we change all the -1 to non-negative numbers.
@@ -127,6 +125,8 @@ public class DumpIndex {
       
       long totalWritten = 0;
       long totalInts = 0;
+      
+      int termId = 0;
       
       while (iter.hasNext()) {
         Entry<TermDesc, Integer> e = iter.next();
@@ -179,12 +179,13 @@ public class DumpIndex {
         outData.write(buffer.array());
         totalWritten += buffer.array().length;
         totalInts += postQty;
-        System.out.println(ts.getText() + " " + postQty + 
+        System.out.println(termId + ":" + ts.getText() + " \t postQty=" + postQty + 
                            " overall written: " + totalWritten/1e6 + " Mbs " +
                             totalInts/1e6 + " Millions of Ints");
+        ++termId;
       }     
     } catch (Exception e) {
-      System.err.println("Cannot open the source index!");
+      System.err.println("Error: " + e.getMessage());
       e.printStackTrace();
       System.exit(1);
     }
@@ -197,7 +198,7 @@ public class DumpIndex {
                        " -Dexec.args=\"" + 
                        " <sort by URL: 1:0>" + 
                        " <index dir> <output file>" + 
-                       " <min term frequency> <max # of terms>\"");
+                       " <optional: min term frequency> <optional: max # of terms>\"");
   }  
   
   

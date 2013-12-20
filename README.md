@@ -20,7 +20,7 @@ Indexing:
 launches/index.sh "[type: Wikipedia, trec:GOV2, trec:ClueWeb09] [location of files (a single file for Wikipedia)] [output directory for the index]"  
 
 Dumping contents:
-launches/dupm.sh [sort by url: 0,1] [index directory] [output file] [min # of documents] [max # of terms] 
+launches/dump.sh [sort by url: 0,1] [index directory] [output file] [min # of documents] [max # of terms] 
 
 If one specifies [min # of documents], we output only terms that appear at least the certain number of times.  It is also possible to limit the overall number of dumped terms. We will select most frequently occurring terms.
 
@@ -29,4 +29,7 @@ Postings will be written sequentially. Each posting has the format:
 [N : #of postings] [docId1] [docId2] ... [docIdN]
 each entry occupies 4 bytes and is stored using the little Endian format.
 
+Mapping AOL logs:
+
+launches/mapaollogs.sh [index directory] [log file] [output file] [min # of documents] [max # of terms]  [optional # of queries]
 

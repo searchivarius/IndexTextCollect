@@ -1,9 +1,11 @@
 /**
+ * This file is based on IndexDump, see Daniel Lemire's repo:
+ * 
+ * https://github.com/lemire/IndexWikipedia
+ * 
  * This code is released under the
  * Apache License Version 2.0 http://www.apache.org/licenses/.
  * 
- * It is based on the Daniel Lemire's code in:
- * https://github.com/lemire/IndexWikipedia
  */
 package info.boytsov.lucene;
 
@@ -30,6 +32,7 @@ import info.boytsov.lucene.parsers.EnwikiContentSource;
  *    
  *    1) Gov2
  *    2) ClueWeb09
+ *    3) Wikipedia
  * 
  * @author Leonid Boytsov
  * @author Daniel Lemire
@@ -90,7 +93,10 @@ public class CreateIndex {
                                                                // only
                                                                // once
     properties.setProperty("doc.index.props", "true");
+    // We want to store small-size fields like URL or even title  ...
     properties.setProperty("doc.stored", "true");
+    // but not the large one (great savings, 3x reduction in space)!
+    properties.setProperty("doc.body.stored", "false");
    
     ContentSource source = CreateSource(indexType, indexSource, properties);
     

@@ -185,29 +185,34 @@ public class DemoHTMLParser implements HTMLParser {
   }
   
   public DocData parse(DocData docData, String name, Date date, InputSource source, TrecContentSource trecSrc) throws IOException, SAXException {
-    final Parser p = new Parser(source);
-    
-    // properties 
-    final Properties docProps = p.metaTags;
-    String dateStr = docProps.getProperty("date");
-    if (dateStr != null) {
-      final Date newDate = trecSrc.parseDate(dateStr);
-      if (newDate != null) {
-        date = newDate;
-      }
-    }
-    
     String bodyText = "";
-    
-    for (Entry<Object, Object> entry : docProps.entrySet()) {
-      bodyText = bodyText + " " + entry.getKey() + " " + entry.getValue();
+    String title = "";
+    try {
+      Parser p = new Parser(source);
+      
+      // properties 
+      final Properties docProps = p.metaTags;
+      String dateStr = docProps.getProperty("date");
+      if (dateStr != null) {
+        final Date newDate = trecSrc.parseDate(dateStr);
+        if (newDate != null) {
+          date = newDate;
+        }
+      }
+      
+      for (Entry<Object, Object> entry : docProps.entrySet()) {
+        bodyText = bodyText + " " + entry.getKey() + " " + entry.getValue();
+      }
+      
+      title = p.title;
+      bodyText = title + " " + bodyText + " " + p.body;
+    } catch (Exception e) {
+      System.err.println("Parsing error: " + e.getMessage());
     }
-    
-    bodyText = bodyText + p.body;
     
     docData.clear();
     docData.setName(name);
-    docData.setTitle(p.title);
+    docData.setTitle(title);
     docData.setBody(bodyText);
     docData.setProps(new Properties());
     docData.setDate(date);

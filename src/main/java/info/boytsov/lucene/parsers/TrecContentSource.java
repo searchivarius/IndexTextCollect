@@ -2,6 +2,10 @@ package info.boytsov.lucene.parsers;
 
 /*
  * 
+ * Coder from:
+ * 
+ *    org.apache.lucene.benchmark.byTask.feeds.TrecContentSource
+ *    
  * Modified by Leonid Boytsov.
  * 
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,10 +31,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
+
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.Locale;
 
 import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.DocData;
@@ -59,7 +61,7 @@ import info.boytsov.lucene.parsers.TrecDocParser.ParsePathType;
  * <li><b>content.source.excludeIteration</b> - if true, do not append iteration number to docname
  * </ul>
  */
-public class TrecContentSource extends ContentSource {
+public class TrecContentSource extends ContentSourceDateUtil {
 
   static final class DateFormatInfo {
     DateFormat[] dfs;
@@ -74,19 +76,6 @@ public class TrecContentSource extends ContentSource {
   /** separator between lines in the buffer */ 
   public static final String NEW_LINE = System.getProperty("line.separator");
 
-  private static final String DATE_FORMATS [] = {
-       "EEE, dd MMM yyyy kk:mm:ss z",   // Tue, 09 Dec 2003 22:39:08 GMT
-       "EEE MMM dd kk:mm:ss yyyy z",    // Tue Dec 09 16:45:08 2003 EST
-       "EEE, dd-MMM-':'y kk:mm:ss z",   // Tue, 09 Dec 2003 22:39:08 GMT
-       "EEE, dd-MMM-yyy kk:mm:ss z",    // Tue, 09 Dec 2003 22:39:08 GMT
-       "EEE MMM dd kk:mm:ss yyyy",      // Tue Dec 09 16:45:08 2003
-       "dd MMM yyyy",                   // 1 March 1994
-       "MMM dd, yyyy",                  // February 3, 1994
-       "yyMMdd",                        // 910513
-       "hhmm z.z.z. MMM dd, yyyy",       // 0901 u.t.c. April 28, 1994
-  };
-
-  private ThreadLocal<DateFormatInfo> dateFormats = new ThreadLocal<DateFormatInfo>();
   private ThreadLocal<StringBuilder> trecDocBuffer = new ThreadLocal<StringBuilder>();
   private File dataDir = null;
   private ArrayList<File> inputFiles = new ArrayList<File>();
@@ -102,21 +91,6 @@ public class TrecContentSource extends ContentSource {
   private boolean excludeDocnameIteration;
   private TrecDocParser trecDocParser = new TrecGov2Parser(); // default
   ParsePathType currPathType; // not private for tests
-  
-  private DateFormatInfo getDateFormatInfo() {
-    DateFormatInfo dfi = dateFormats.get();
-    if (dfi == null) {
-      dfi = new DateFormatInfo();
-      dfi.dfs = new SimpleDateFormat[DATE_FORMATS.length];
-      for (int i = 0; i < dfi.dfs.length; i++) {
-        dfi.dfs[i] = new SimpleDateFormat(DATE_FORMATS[i], Locale.ROOT);
-        dfi.dfs[i].setLenient(true);
-      }
-      dfi.pos = new ParsePosition(0);
-      dateFormats.set(dfi);
-    }
-    return dfi;
-  }
 
   private StringBuilder getDocBuffer() {
     StringBuilder sb = trecDocBuffer.get();
@@ -199,26 +173,6 @@ public class TrecContentSource extends ContentSource {
     }
   }
 
-  public Date parseDate(String dateStr) {
-    dateStr = dateStr.trim();
-    DateFormatInfo dfi = getDateFormatInfo();
-    for (int i = 0; i < dfi.dfs.length; i++) {
-      DateFormat df = dfi.dfs[i];
-      dfi.pos.setIndex(0);
-      dfi.pos.setErrorIndex(-1);
-      Date d = df.parse(dateStr, dfi.pos);
-      if (d != null) {
-        // Parse succeeded.
-        return d;
-      }
-    }
-    // do not fail test just because a date could not be parsed
-    if (verbose) {
-      System.out.println("failed to parse date (assigning 'now') for: " + dateStr);
-    }
-    return null; 
-  }
-  
   @Override
   public void close() throws IOException {
     if (reader == null) {

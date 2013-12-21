@@ -176,7 +176,8 @@ public class DemoHTMLParser implements HTMLParser {
   }
 
   @Override
-  public DocData parse(DocData docData, String name, Date date, Reader reader, TrecContentSource trecSrc) throws IOException {
+  public DocData parse(DocData docData, String name, Date date, Reader reader, 
+                       ContentSourceDateUtil trecSrc) throws IOException {
     try {
       return parse(docData, name, date, new InputSource(reader), trecSrc);
     } catch (SAXException saxe) {
@@ -184,7 +185,8 @@ public class DemoHTMLParser implements HTMLParser {
     }
   }
   
-  public DocData parse(DocData docData, String name, Date date, InputSource source, TrecContentSource trecSrc) throws IOException, SAXException {
+  public DocData parse(DocData docData, String name, Date date, InputSource source, 
+                       ContentSourceDateUtil trecSrc) throws IOException, SAXException {
     String bodyText = "";
     String title = "";
     try {

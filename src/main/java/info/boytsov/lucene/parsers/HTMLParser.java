@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Date;
 
+import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.DocData;
 
 /**
@@ -38,10 +39,10 @@ public interface HTMLParser {
    * @param name name of the result doc data.
    * @param date date of the result doc data. If null, attempt to set by parsed data.
    * @param reader reader of html text to parse.
-   * @param trecSrc the {@link TrecContentSource} used to parse dates.   
+   * @param trecSrc the {@link ContentSourceDateUtil} used to parse dates.   
    * @return Parsed doc data.
    * @throws IOException If there is a low-level I/O error.
    */
-  public DocData parse(DocData docData, String name, Date date, Reader reader, TrecContentSource trecSrc) throws IOException;
+  public DocData parse(DocData docData, String name, Date date, Reader reader, ContentSourceDateUtil trecSrc) throws IOException;
 
 }

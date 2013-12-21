@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
+import info.boytsov.lucene.parsers.ClueWeb09ContentSource;
 import info.boytsov.lucene.parsers.TrecContentSource;
 import info.boytsov.lucene.parsers.EnwikiContentSource;
 
@@ -167,22 +168,30 @@ public class CreateIndex {
       return new EnwikiContentSource();
     } else if (typeLC.startsWith("TREC:")){
       typeLC = typeLC.substring("TREC:".length());
-      String parserTREC = null;
-      if (typeLC.equals("GOV2")) {
-        parserTREC = "info.boytsov.lucene.parsers.TrecGov2Parser";
+
+      if (typeLC.equals("GOV2")) {        
+        String parserTREC = "info.boytsov.lucene.parsers.TrecGov2Parser";
+        
+        
+        properties.setProperty("html.parser", 
+                               "info.boytsov.lucene.parsers.DemoHTMLParser");
+        properties.setProperty("trec.doc.parser", parserTREC);
+        properties.setProperty("docs.dir", indexSource);
+        properties.setProperty("work.dir", "/tmp");
+        
+        return new TrecContentSource();        
+      }
+      if (typeLC.equals("CLUEWEB09")) {
+        properties.setProperty("html.parser", 
+                               "info.boytsov.lucene.parsers.DemoHTMLParser");
+        properties.setProperty("docs.dir", indexSource);
+        properties.setProperty("work.dir", "/tmp");
+
+        return new ClueWeb09ContentSource();
       }
       
-      if (parserTREC == null) {
-        System.err.println("Unsupported TREC collection: " + typeLC);  
-      }
+      System.err.println("Unsupported TREC collection: " + typeLC);  
       
-      properties.setProperty("html.parser", 
-                             "info.boytsov.lucene.parsers.DemoHTMLParser");
-      properties.setProperty("trec.doc.parser", parserTREC);
-      properties.setProperty("docs.dir", indexSource);
-      properties.setProperty("work.dir", "/tmp");
-      
-      return new TrecContentSource();
     } else {
       System.err.println("Unsupported index type: " + indexType);
     }

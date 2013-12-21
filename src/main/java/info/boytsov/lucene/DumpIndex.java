@@ -147,11 +147,6 @@ public class DumpIndex {
         Entry<TermDesc, Integer> e = iter.next();
       
         TermDesc ts = e.getKey();
-        /*
-        System.out.println(e.getValue() + 
-                           "@@" + dict.getTermPos(ts.getText()) 
-                           + " ---> " + ts);
-        */
         DocsEnum docIter = dict.getDocIterator(ts.text);
         
         int postQty = ts.freq;
@@ -191,18 +186,24 @@ public class DumpIndex {
           throw new Exception("Bug: fewer postings than expected for term: " 
                               + ts.getText());
         }
-        // Now let's resort docIds and write them
-        Arrays.sort(tmpDocId);
+        /*
+         *  Now let's resort docIds and write them.
+         *  REMEMBER that tmpDocId is a buffer that may contain 
+         *  MORE than postQty elements!!!
+         *  Some of the won't be used.
+         *  
+         */
+        Arrays.sort(tmpDocId, 0, postQty);
         
-        for (int docId : tmpDocId) bufferArray.add(docId);
+        for (int i = 0; i < postQty; ++i) bufferArray.add(tmpDocId[i]);
         
         totalWritten += 4 * (1 + postQty);        
         totalInts += postQty;
         
-        if (termId % 1000 == 0 || bufferArray.size() >= batchWriteSize) {
+        if (termId % 100000 == 0 || bufferArray.size() >= batchWriteSize) {
           System.out.println(termId + ":" + ts.getText() + " \t postQty=" + postQty + 
-                             " overall written: " + totalWritten/1e6 + " Mbs " +
-                              totalInts/1e6 + " Millions postings");
+             " overall written: " + totalWritten/1024.0/1024.0/1024.0 + " Gbs, " +
+              totalInts/1e6 + " Millions postings");
         }        
         
         if (bufferArray.size() >= batchWriteSize) {
@@ -212,6 +213,12 @@ public class DumpIndex {
 
         ++termId;
       }
+      System.out.println("Term qty: " + termId + 
+          " flat size size : " + totalWritten/1024.0/1024.0/1024.0 + " Gbs, " +
+           totalInts/1e6 + " Millions postings");
+
+      
+      
       // WriteArray may produce a new buffer, let's reuse it      
       buffer = WriteArray(bufferArray, outData, buffer);
     } catch (Exception e) {
@@ -230,7 +237,7 @@ public class DumpIndex {
       reuseBuffer.order(ByteOrder.LITTLE_ENDIAN);
     }
     
-    reuseBuffer.rewind();
+    reuseBuffer.clear();
     
     for (int i = 0; i < bufferArray.size(); ++i)
       reuseBuffer.putInt(bufferArray.get(i));

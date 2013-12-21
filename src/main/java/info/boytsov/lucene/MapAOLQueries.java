@@ -57,7 +57,7 @@ public class MapAOLQueries {
     int minTermFreq = DumpIndex.MIN_TERM_FREQ;    
     int maxTermQty  = DumpIndex.MAX_TERM_QTY; 
     int optArg = 3;
-    int minQuerySize = 2;
+    int minQuerySize = 1;
     
     if (args.length >= 4 && !args[3].startsWith("-")) {
       minTermFreq = Integer.parseInt(args[3]);

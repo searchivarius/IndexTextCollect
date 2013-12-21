@@ -37,7 +37,7 @@ public class LeoHTMLParser implements HTMLParser {
                        String name, 
                        Date date, 
                        Reader reader, 
-                       TrecContentSource trecSrc) throws IOException {
+                       ContentSourceDateUtil trecSrc) throws IOException {
 
     return parse(docData, name, date, new InputSource(reader), trecSrc);
   }
@@ -46,7 +46,7 @@ public class LeoHTMLParser implements HTMLParser {
                        String name, 
                        Date date, 
                        InputSource source, 
-                       TrecContentSource trecSrc) 
+                       ContentSourceDateUtil trecSrc) 
                        throws IOException {
     String title = "";
     String bodyText = "";

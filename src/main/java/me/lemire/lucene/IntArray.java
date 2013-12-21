@@ -1,5 +1,11 @@
 package me.lemire.lucene;
 
+/*
+* This file is taken from Daniel Lemire's repo:
+* 
+* https://github.com/lemire/IndexWikipedia
+*/
+
 
 import java.io.DataInput;
 import java.io.DataOutput;

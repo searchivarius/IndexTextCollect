@@ -63,9 +63,10 @@ public class TrecGov2Parser extends TrecDocParser {
           start = h2 + TERMINATING_DOCHDR.length();
           
           final String html = docBuf.substring(start);
-          DocData res = trecSrc.getHtmlParser().parse(docData, name, date, new StringReader(html), trecSrc);
-          res.getProps().put("url", url);
-          return res;
+          docData = trecSrc.getHtmlParser().parse(docData, name, date, new StringReader(html), trecSrc);
+          // This should be done after parse(), b/c parse() resets properties
+          docData.getProps().put("url", url);
+          return docData;
       } else {
         System.err.println("Ignoring schema in URI: " + url);  
       }

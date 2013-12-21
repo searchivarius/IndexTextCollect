@@ -8,6 +8,7 @@ package info.boytsov.lucene;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -18,6 +19,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.FSDirectory;
+
+import me.lemire.lucene.IntArray;
 
 /**
  * 
@@ -88,6 +91,7 @@ public class DumpIndex {
                         
         for (int newDocID = 0; newDocID < docQty; ++newDocID) {
           sortTable[remap[newDocID].docID] = newDocID;
+          //System.out.println(remap[newDocID].url);
         }
         
         System.out.println("Sort table is filled up!");
@@ -128,6 +132,17 @@ public class DumpIndex {
       
       int termId = 0;
       
+      int batchWriteSize = 1024 * 1024 * 16;
+      
+      /*
+       *  We are trying to re-use as many objects as possible,
+       *  in order to reduce the number of allocations.
+       */
+      IntArray  bufferArray = new IntArray(batchWriteSize);
+      int       tmpDocId[]  = null;
+
+      ByteBuffer  buffer = null;
+      
       while (iter.hasNext()) {
         Entry<TermDesc, Integer> e = iter.next();
       
@@ -140,14 +155,18 @@ public class DumpIndex {
         DocsEnum docIter = dict.getDocIterator(ts.text);
         
         int postQty = ts.freq;
-        
-        ByteBuffer buffer = ByteBuffer.allocate(4 * (1 + postQty));        
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        
-        buffer.putInt(postQty);
-        
-        int tmpDocId[] = new int[postQty];
+              
+
         int qty = 0, prevDocID = -1;
+        
+        /*
+         * If posting lists appear in the order of descending term frequencies.,
+         * this will be actually only one allocation.
+         */
+        if (tmpDocId == null || tmpDocId.length < postQty)
+          tmpDocId = new int[postQty];
+        
+        bufferArray.add(postQty);
         
         for (int i = 0; 
              docIter.nextDoc() != DocIdSetIterator.NO_MORE_DOCS; 
@@ -174,22 +193,53 @@ public class DumpIndex {
         }
         // Now let's resort docIds and write them
         Arrays.sort(tmpDocId);
-        for (int docId : tmpDocId) buffer.putInt(docId);
-        // Finally, we can write the buffer!
-        outData.write(buffer.array());
-        totalWritten += buffer.array().length;
+        
+        for (int docId : tmpDocId) bufferArray.add(docId);
+        
+        totalWritten += 4 * (1 + postQty);        
         totalInts += postQty;
-        System.out.println(termId + ":" + ts.getText() + " \t postQty=" + postQty + 
-                           " overall written: " + totalWritten/1e6 + " Mbs " +
-                            totalInts/1e6 + " Millions of Ints");
+        
+        if (termId % 1000 == 0 || bufferArray.size() >= batchWriteSize) {
+          System.out.println(termId + ":" + ts.getText() + " \t postQty=" + postQty + 
+                             " overall written: " + totalWritten/1e6 + " Mbs " +
+                              totalInts/1e6 + " Millions postings");
+        }        
+        
+        if (bufferArray.size() >= batchWriteSize) {
+          // WriteArray may produce a new buffer, let's reuse it
+          buffer = WriteArray(bufferArray, outData, buffer);
+        }        
+
         ++termId;
-      }     
+      }
+      // WriteArray may produce a new buffer, let's reuse it      
+      buffer = WriteArray(bufferArray, outData, buffer);
     } catch (Exception e) {
       System.err.println("Error: " + e.getMessage());
       e.printStackTrace();
       System.exit(1);
     }
     
+  }
+
+  private static ByteBuffer WriteArray(IntArray bufferArray,
+      FileOutputStream outData, ByteBuffer reuseBuffer) throws IOException {
+    int newCapacity = 4 * bufferArray.size();
+    if (reuseBuffer == null || reuseBuffer.capacity() < newCapacity) {
+      reuseBuffer = ByteBuffer.allocate(newCapacity);
+      reuseBuffer.order(ByteOrder.LITTLE_ENDIAN);
+    }
+    
+    reuseBuffer.rewind();
+    
+    for (int i = 0; i < bufferArray.size(); ++i)
+      reuseBuffer.putInt(bufferArray.get(i));
+    
+    outData.write(reuseBuffer.array(), 0, newCapacity);
+    
+    bufferArray.clear();
+    
+    return reuseBuffer;
   }
 
   private static void printUsage() {

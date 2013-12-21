@@ -23,6 +23,7 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * A helper class to retrieve the list of common terms.
+ * It is NOT THREAD SAFE due to iterator re-use!
  * 
  * @author Leonid Boytsov
  */
@@ -31,6 +32,10 @@ public class FreqWordDict {
   private Terms                       terms;  
   private TreeMap<TermDesc, Integer>  termDescPos;
   private TreeMap<BytesRef, Integer>  termTextPos;
+  
+  // Re-use makes this class not-thread safe!
+  private TermsEnum  reuseTermsIter;
+  private DocsEnum   reuseDocsIter;
   
   public FreqWordDict(IndexReader reader, String fieldName,
                       int minTermFreq, int maxTermQty) 
@@ -85,13 +90,13 @@ public class FreqWordDict {
   }
   
   public DocsEnum getDocIterator(BytesRef text) throws IOException {
-    TermsEnum termIter = terms.iterator(null);
+    TermsEnum termIter = terms.iterator(reuseTermsIter);
 
     if (!termIter.seekExact(text)) {
       return null;
     }
     
-    return termIter.docs(null, null);    
+    return termIter.docs(null, reuseDocsIter);    
   }
   
   public int getTermCount() { return termDescPos.size(); } 

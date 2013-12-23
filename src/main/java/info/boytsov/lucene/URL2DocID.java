@@ -12,7 +12,7 @@ class URL2DocID implements Comparable<URL2DocID> {
     this.url = url;
     this.docID = docID;
   }
-  @Override
+
   public int compareTo(URL2DocID o) {
     return url.compareTo(o.url);
   }

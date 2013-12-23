@@ -182,8 +182,9 @@ public class CreateIndex {
         return new TrecContentSource();        
       }
       if (typeLC.equals("CLUEWEB09")) {
+      // Demo HTML parser fails on this collection
         properties.setProperty("html.parser", 
-                               "info.boytsov.lucene.parsers.DemoHTMLParser");
+                               "info.boytsov.lucene.parsers.LeoHTMLParser");
         properties.setProperty("docs.dir", indexSource);
         properties.setProperty("work.dir", "/tmp");
 

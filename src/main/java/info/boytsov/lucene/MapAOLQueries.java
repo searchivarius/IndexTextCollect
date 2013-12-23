@@ -42,7 +42,7 @@ public class MapAOLQueries {
   private static FileOutputStream outWriter;
 
   public static void main(String[] args) {
-    if (args.length < 5 || args.length > 8) {
+    if (args.length < 3) {
       printUsage();
       System.exit(1);      
     }

@@ -8,9 +8,13 @@ sampleQty=1000
 if [ "$6" != "" ] ; then
   sampleQty="$6"
 fi
+minQuerySize=""
+if [ "$7" != "" ] ; then
+  minQuerySize=" -min_query_size $7 "
+fi
 debug=""
-if [ "$7" == "1" ] ; then
+if [ "$8" == "1" ] ; then
   debug="-debug"
 fi
-mvn exec:java -Dexec.args="$src $log $dst $minTermFreq $maxTermQty -sample_qty $sampleQty $debug" -Dexec.mainClass=info.boytsov.lucene.MapAOLQueries
+mvn exec:java -Dexec.args="$src $log $dst $minTermFreq $maxTermQty -sample_qty $sampleQty $minQuerySize $debug" -Dexec.mainClass=info.boytsov.lucene.MapAOLQueries
 

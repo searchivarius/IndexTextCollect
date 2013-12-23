@@ -136,7 +136,10 @@ public class ClueWeb09ContentSource extends ContentSourceDateUtil {
         
       } while (CurrRec != null && !CurrRec.getHeaderRecordType().equals("response"));
       
-      if (CurrRec == null) throw new NoMoreDataException();
+      if (CurrRec == null) {
+        openNextFile();
+        return getNextDocData(docData);
+      }
     }
         
  

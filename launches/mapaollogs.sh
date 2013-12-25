@@ -16,5 +16,6 @@ debug=""
 if [ "$8" == "1" ] ; then
   debug="-debug"
 fi
+export MAVEN_OPTS="-Xmx12000m"
 mvn exec:java -Dexec.args="$src $log $dst $minTermFreq $maxTermQty -sample_qty $sampleQty $minQuerySize $debug" -Dexec.mainClass=info.boytsov.lucene.MapAOLQueries
 

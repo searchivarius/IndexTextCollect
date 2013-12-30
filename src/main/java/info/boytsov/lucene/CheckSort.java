@@ -45,7 +45,6 @@ public class CheckSort {
       
       double sortedStreak = 0;
       int    sortedStreakQty = 0;
-      int    otherQty = 0;
       
       URL2DocID remap[] = new URL2DocID[docQty];
       
@@ -65,18 +64,15 @@ public class CheckSort {
           System.out.println("Collected " + (docID + 1) + 
              " URLs, sorted so far, direct " + sortedQty + 
              " avg. sorted streak QTY: " + (sortedStreak/sortedStreakQty) + 
-             " sortedStreakQty: " + sortedStreakQty + " otherQty: " + otherQty);
+             " sortedStreakQty: " + sortedStreakQty);
         }
         // Assuming the increasing order
         if (dir * url.compareTo(prevURL) >= 0) {
           ++sortedQty;
         } else {
-          if (docID > prevSorted + 1) {
-            sortedStreak += docID - prevSorted - 1;
-            sortedStreakQty++;
-          } else {
-            otherQty++;
-          }
+          sortedStreak += docID - prevSorted - 1;
+          sortedStreakQty++;
+
           prevSorted = docID;
         }
         prevURL = url;
@@ -85,11 +81,12 @@ public class CheckSort {
       System.out.println("Collected " + docQty + 
           " URLs, sorted so far, direct " + sortedQty + 
           " avg. sorted streak QTY: " + (sortedStreak/sortedStreakQty) + 
-          " sortedStreakQty: " + sortedStreakQty + " otherQty: " + otherQty);
+          " sortedStreakQty: " + sortedStreakQty);
      
       double invQty = Inversions.count(remap);
       System.out.println("A total number of inversions: " + invQty + 
-                         "relative: " + (invQty * 2.0 / docQty / (docQty + 1)));
+                         " relative to n*(n-1)/2: " + 
+                          (invQty * 2.0 / docQty / (docQty + 1)));
 
     } catch (Exception e) {
       System.err.println("Error: " + e.getMessage());

@@ -50,3 +50,12 @@ You can also supply some other log file given that it has the following format:
 
 <session id> <tab> <space separated query words>
 
+
+Checking the "sortedness" of the collection
+--------------------------
+
+Some collections (in particular, ClueWeb09) are partially sorted. To collected "sortedness" statistics you can do:
+
+launches/checksort.sh [index directory] [forward|backward]
+
+The program will print the overall number of inversions (also relative to n*(n-1)/2) and the average length of the sorted run.

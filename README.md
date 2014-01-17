@@ -41,14 +41,19 @@ each entry occupies 4 bytes and is stored using the little Endian format.
 NOTE that dumping is a very slow process, which is IO-bound. Be prepared that it takes much longer than indexing.
 
 
-Mapping AOL logs:
+Mapping logs:
 ------------------------
+
+This was originally created to map AOL logs as follows:
 
 launches/mapaollogs.sh [index directory] [log file] [output file] [min # of documents] [max # of terms]  [optional max # of queries to process]
 
 You can also supply some other log file given that it has the following format:
 
-<session id> <tab> <space separated query words>
+[session id] [tab] [space-separated query words]
+
+In particular, we also used 1 Million TREC query files.
+
 
 
 Checking the "sortedness" of the collection

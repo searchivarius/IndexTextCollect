@@ -52,14 +52,14 @@ You can also supply some other log file given that it has the following format:
 
 [session id] [tab] [space-separated query words]
 
-In particular, we also used 1 Million TREC query files.
+In particular, we also used 1 Million TREC query files (which was converted using a rather trivial script).
 
 
 
 Checking the "sortedness" of the collection
 --------------------------
 
-Some collections (in particular, ClueWeb09) are partially sorted. To collected "sortedness" statistics you can do:
+Some collections (in particular, ClueWeb09) are partially sorted. To compute "sortedness" statistics you can do:
 
 launches/checksort.sh [index directory] [forward|backward]
 

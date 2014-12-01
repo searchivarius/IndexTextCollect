@@ -62,7 +62,7 @@ public class GetTotPostQty {
 
       System.out.println(
           "Term qty: " + termQty +
-          "Doc qty: " + docQty +
+          " Doc qty: " + docQty +
           " postings qty: " +
            totalInts);
 

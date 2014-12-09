@@ -41,17 +41,36 @@ public class MapAOLQueriesAllWords {
       System.exit(1);      
     }
     
+    boolean DEBUG = false;
+    
     String srcDirName = args[0];
     String srcFileName = args[1];
-     
+    
+    // using the same default value, so that we get consistent results
+    int minTermFreq = DumpIndex.MIN_TERM_FREQ;    
+    int maxTermQty  = DumpIndex.MAX_TERM_QTY; 
     int optArg = 2;
     int minQuerySize = 1;
     
-     boolean   ignoreSessionDuplicates = true;
+    if (args.length >= 3 && !args[2].startsWith("-")) {
+      minTermFreq = Integer.parseInt(args[2]);
+      optArg++;
+
+      // using the same default value, so that we get consistent results
+      if (args.length >= 4 && !args[3].startsWith("-")) { 
+        maxTermQty = Integer.parseInt(args[3]);
+        optArg++;
+      }
+    }
+    
+    
+    boolean   ignoreSessionDuplicates = true;
     
     for (int i = optArg; i < args.length; ++i) {
       if (args[i].equals("-permit_sess_duppl")) {
         ignoreSessionDuplicates = true;
+      } else if (args[i].equals("-debug")) {
+        DEBUG=true;
       } else if (args[i].equals("-min_query_size")){
         minQuerySize = Integer.parseInt(args[++i]);
       } else {
@@ -62,9 +81,11 @@ public class MapAOLQueriesAllWords {
     }
 
     
-    System.out.println("Source dir: "    + srcDirName +
+    System.out.println("Source dir: "    + srcDirName + "\n" +
                        " log file: "     + srcFileName);
-    System.out.println(" Min query size: " + minQuerySize);
+    System.out.println(" (cache param) Min term freq: " + minTermFreq + "\n" + 
+                       " (cache param) Max # of terms: " + maxTermQty + "\n" +
+                       " Min query size: " + minQuerySize);
 
     System.out.println("Ignore duplicates within a session: " +
                         ignoreSessionDuplicates);
@@ -76,6 +97,12 @@ public class MapAOLQueriesAllWords {
       StandardAnalyzer  analyzer = new StandardAnalyzer(Version.LUCENE_46);
       QueryParser       qParser = new QueryParser(Version.LUCENE_46, 
                                                         FIELD_NAME, analyzer);
+
+      System.out.println("Loading dictionary cache,  please, be patient!");
+      FreqWordDict  dictCache = new FreqWordDict(reader, FIELD_NAME,
+                                            minTermFreq, maxTermQty);
+      System.out.println("dictionary loaded: " + dictCache.getTermCount() + " terms cached.");
+      
       
       File srcFile = new File(srcFileName);
 
@@ -137,12 +164,18 @@ public class MapAOLQueriesAllWords {
           } else {
             ++querySize;
           }
-
-          Query luceneQuery = qParser.parse(QueryParserUtil.escape(s));
           
-          TopDocs td = searcher.search(luceneQuery, 1);
+          boolean bMiss = dictCache.getTermPos(s) == null;
           
-          if (td.totalHits == 0) {
+          if (bMiss) {
+            Query luceneQuery = qParser.parse(QueryParserUtil.escape(s));
+            
+            TopDocs td = searcher.search(luceneQuery, 1);
+            
+            bMiss = (td.totalHits == 0);
+          }
+            
+          if (bMiss) {
             System.out.println("Missing: " + s + " query num: " + num);
             bOk = false;
             break;
@@ -154,6 +187,7 @@ public class MapAOLQueriesAllWords {
         } else if (!bOk) {
           missQty++;
         }
+        //if (totalQty > 1000) break;
       }
       
       int usableQty = (unparsedQueries.size() - tooShortQty);

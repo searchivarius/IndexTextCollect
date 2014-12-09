@@ -10,28 +10,29 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map.Entry;
+import java.util.*;
 
 import org.apache.lucene.analysis.core.StopAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
 import org.apache.lucene.index.*;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.flexible.standard.QueryParserUtil;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 
 /**
  * 
- * A simple utility to computing "mapping statistics".
- * 
  * We use the index which was previously created by the utility 
- * CreateIndex. One needs to use the same values
- * for minTermFreq and maxTermQty as for the utility DumpIndex. 
+ * CreateIndex.  
  *  
  * @author Leonid Boytsov
  */
-public class MapAOLQueries {
+public class MapAOLQueriesAllWords {
   final public static String FIELD_NAME = "body";
 
   public static void main(String[] args) {
@@ -40,36 +41,17 @@ public class MapAOLQueries {
       System.exit(1);      
     }
     
-    boolean DEBUG = false;
-    
     String srcDirName = args[0];
     String srcFileName = args[1];
-    
-    // using the same default value, so that we get consistent results
-    int minTermFreq = DumpIndex.MIN_TERM_FREQ;    
-    int maxTermQty  = DumpIndex.MAX_TERM_QTY; 
+     
     int optArg = 2;
     int minQuerySize = 1;
     
-    if (args.length >= 3 && !args[2].startsWith("-")) {
-      minTermFreq = Integer.parseInt(args[2]);
-      optArg++;
-
-      // using the same default value, so that we get consistent results
-      if (args.length >= 4 && !args[3].startsWith("-")) { 
-        maxTermQty = Integer.parseInt(args[3]);
-        optArg++;
-      }
-    }
-    
-    
-    boolean   ignoreSessionDuplicates = true;
+     boolean   ignoreSessionDuplicates = true;
     
     for (int i = optArg; i < args.length; ++i) {
       if (args[i].equals("-permit_sess_duppl")) {
         ignoreSessionDuplicates = true;
-      } else if (args[i].equals("-debug")) {
-        DEBUG=true;
       } else if (args[i].equals("-min_query_size")){
         minQuerySize = Integer.parseInt(args[++i]);
       } else {
@@ -82,36 +64,19 @@ public class MapAOLQueries {
     
     System.out.println("Source dir: "    + srcDirName +
                        " log file: "     + srcFileName);
-    System.out.println("Min term freq: " + minTermFreq + 
-                       " Max # of terms: " + maxTermQty +
-                       " Min query size: " + minQuerySize);
+    System.out.println(" Min query size: " + minQuerySize);
 
     System.out.println("Ignore duplicates within a session: " +
                         ignoreSessionDuplicates);
     
     try {
-      IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(srcDirName)));
+      IndexReader              reader = 
+                  DirectoryReader.open(FSDirectory.open(new File(srcDirName)));
+      IndexSearcher     searcher = new IndexSearcher(reader);
+      StandardAnalyzer  analyzer = new StandardAnalyzer(Version.LUCENE_46);
+      QueryParser       qParser = new QueryParser(Version.LUCENE_46, 
+                                                        FIELD_NAME, analyzer);
       
-      System.out.println("Loading dictionary,  please, be patient!");
-      FreqWordDict  dict = new FreqWordDict(reader, FIELD_NAME,
-                                            minTermFreq, maxTermQty);
-      System.out.println("dictionary loaded.");
-      
-      if (DEBUG) {
-        Iterator<Entry<TermDesc, Integer>> iter = dict.getTermIterator();
-
-        int termId = 0;
-        
-        while (iter.hasNext()) {
-          Entry<TermDesc, Integer> e = iter.next();
-        
-          TermDesc ts = e.getKey();
-          if (termId % 100 == 0)
-            System.out.println(termId + ":" + ts.getText());
-          ++termId;
-        }
-      }
-
       File srcFile = new File(srcFileName);
 
       // supports either gzip, bzip2, or regular text file, 
@@ -157,10 +122,12 @@ public class MapAOLQueries {
 
       int tooShortQty = 0, missQty = 0;
 
+      int num = 0;
       for (String q: unparsedQueries) {
+        ++num;
         String queryParts[] = q.split("\\s+");
         
-        String  res = "";
+        boolean bOk = true;
         int     querySize = 0;
         
         for (String s: queryParts) {
@@ -171,18 +138,20 @@ public class MapAOLQueries {
             ++querySize;
           }
 
-          Integer pos = dict.getTermPos(s);
-          if (pos == null) {
-            res = "";
+          Query luceneQuery = qParser.parse(QueryParserUtil.escape(s));
+          
+          TopDocs td = searcher.search(luceneQuery, 1);
+          
+          if (td.totalHits == 0) {
+            System.out.println("Missing: " + s + " query num: " + num);
+            bOk = false;
             break;
-          }
-          String posStr = DEBUG ? s + ":" + pos : pos.toString();
-          res = res.isEmpty() ? posStr : res + " " + posStr; 
+          } 
         }
         
         if (querySize < minQuerySize) {
           ++tooShortQty;
-        } else if (res.isEmpty()) {
+        } else if (!bOk) {
           missQty++;
         }
       }
@@ -209,7 +178,6 @@ public class MapAOLQueries {
                        " <min term frequency> <optional: max # of terms>" +
                        " -permit_sess_duppl" +
                        " -min_query_size <min # of words in a query>" +
-                       " -debug "+
                        "\"");
   }  
   

@@ -51,6 +51,7 @@ public class MapAOLQueriesAllWords {
     int maxTermQty  = DumpIndex.MAX_TERM_QTY; 
     int optArg = 2;
     int minQuerySize = 1;
+    int maxQueryQty = Integer.MAX_VALUE;
     
     if (args.length >= 3 && !args[2].startsWith("-")) {
       minTermFreq = Integer.parseInt(args[2]);
@@ -73,6 +74,8 @@ public class MapAOLQueriesAllWords {
         DEBUG=true;
       } else if (args[i].equals("-min_query_size")){
         minQuerySize = Integer.parseInt(args[++i]);
+      } else if (args[i].equals("-max_query_qty")){
+        maxQueryQty = Integer.parseInt(args[++i]);        
       } else {
         System.err.println("Wrong param: " + args[i]);
         printUsage();
@@ -85,7 +88,8 @@ public class MapAOLQueriesAllWords {
                        " log file: "     + srcFileName);
     System.out.println(" (cache param) Min term freq: " + minTermFreq + "\n" + 
                        " (cache param) Max # of terms: " + maxTermQty + "\n" +
-                       " Min query size: " + minQuerySize);
+                       " Min query size: " + minQuerySize + "\n" +
+                       " Max # of queries to read: " + maxQueryQty);
 
     System.out.println("Ignore duplicates within a session: " +
                         ignoreSessionDuplicates);
@@ -149,48 +153,48 @@ public class MapAOLQueriesAllWords {
 
       int tooShortQty = 0, missQty = 0;
 
-      int num = 0;
+      int numQueryQty = 0;
+      
+      ArrayList<String> qList = new ArrayList<String>();
+      
+      int usableQty = 0;
       for (String q: unparsedQueries) {
-        ++num;
+        ++numQueryQty;
+        if (numQueryQty > maxQueryQty) break;
         String queryParts[] = q.split("\\s+");
         
-        boolean bOk = true;
-        int     querySize = 0;
+        qList.clear();
         
         for (String s: queryParts) {
           // We need to ignore stop words, but not the original queries
-          if (stopWords.contains(s)) {
-            continue;
-          } else {
-            ++querySize;
-          }
-          
-          boolean bMiss = dictCache.getTermPos(s) == null;
-          
-          if (bMiss) {
-            Query luceneQuery = qParser.parse(QueryParserUtil.escape(s));
-            
-            TopDocs td = searcher.search(luceneQuery, 1);
-            
-            bMiss = (td.totalHits == 0);
-          }
-            
-          if (bMiss) {
-            System.out.println("Missing: " + s + " query num: " + num);
-            bOk = false;
-            break;
-          } 
+          if (stopWords.contains(s)) continue;
+          qList.add(s);
         }
-        
-        if (querySize < minQuerySize) {
-          ++tooShortQty;
-        } else if (!bOk) {
-          missQty++;
-        }
-        //if (totalQty > 1000) break;
+        if (qList.size() >= minQuerySize) {
+          boolean bOk = true;
+          ++usableQty;
+          for (String s: qList) {            
+            boolean bMiss = dictCache.getTermPos(s) == null;
+            
+            if (bMiss) {
+              Query luceneQuery = qParser.parse(QueryParserUtil.escape(s));
+              
+              TopDocs td = searcher.search(luceneQuery, 1);
+              
+              bMiss = (td.totalHits == 0);
+            }
+              
+            if (bMiss) {
+              System.out.println("Missing: " + s);
+              System.out.println("Query num: " + numQueryQty);
+              bOk = false;
+              //break; don't break here
+            } 
+          }
+          if (!bOk) missQty++;
+        } else ++tooShortQty;
       }
       
-      int usableQty = (unparsedQueries.size() - tooShortQty);
       System.out.println("totalQty - tooShortQty = " +  usableQty + 
                          " missQty = " + missQty + 
                          " tooShortQty = " + tooShortQty + 

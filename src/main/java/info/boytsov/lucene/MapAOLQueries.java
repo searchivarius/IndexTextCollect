@@ -157,38 +157,38 @@ public class MapAOLQueries {
 
       int tooShortQty = 0, missQty = 0;
 
+      int usableQty = 0;
+      ArrayList<String> qList = new ArrayList<String>();
+      
       for (String q: unparsedQueries) {
         String queryParts[] = q.split("\\s+");
-        
-        String  res = "";
-        int     querySize = 0;
+        qList.clear();
         
         for (String s: queryParts) {
           // We need to ignore stop words, but not the original queries
-          if (stopWords.contains(s)) {
-            continue;
-          } else {
-            ++querySize;
-          }
-
-          Integer pos = dict.getTermPos(s);
-          if (pos == null) {
-            res = "";
-            break;
-          }
-          String posStr = DEBUG ? s + ":" + pos : pos.toString();
-          res = res.isEmpty() ? posStr : res + " " + posStr; 
+          if (stopWords.contains(s)) continue;
+          qList.add(s);
         }
-        
-        if (querySize < minQuerySize) {
+        if (qList.size() < minQuerySize) {
           ++tooShortQty;
-        } else if (res.isEmpty()) {
-          missQty++;
-        }
+        } else {
+          ++usableQty;
+          boolean bOk = true;          
+          for (String s: qList) {
+            Integer pos = dict.getTermPos(s);
+            if (pos == null) {
+              bOk = false;
+              System.out.println("Missing: " + s);
+              //break; don't break here
+            } 
+          }
+          if (!bOk) {
+            missQty++;
+          }
+        }        
       }
       
-      int usableQty = (unparsedQueries.size() - tooShortQty);
-      System.out.println("totalQty - tooShortQty = " +  usableQty + 
+      System.out.println("usableQty = " +  usableQty + 
                          " missQty = " + missQty + 
                          " tooShortQty = " + tooShortQty + 
                          " fraction of excluded: " + 
